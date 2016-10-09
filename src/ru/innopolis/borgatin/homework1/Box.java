@@ -23,7 +23,7 @@ class Box {
      * Метод предназначен для чтения данных из amount
      * @return возвращает текущее значение поля amount
      */
-    synchronized int getAmount() {
+    /*synchronized*/ int getAmount() {
         return amount.get();
     }
 

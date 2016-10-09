@@ -32,7 +32,7 @@ class ResourceFile implements Runnable{
                             box.inc(tempInt);
                         }
                     }
-                    Thread.sleep(500);
+//                    Thread.sleep(500);
                 }
 
 
@@ -40,9 +40,9 @@ class ResourceFile implements Runnable{
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
-        } catch (InterruptedException e) {
+        } /*catch (InterruptedException e) {
             e.printStackTrace();
-        }
+        }*/
 
         System.out.println(String.format("Поток для файла \"%s\" завершен",resourcePath));
 
