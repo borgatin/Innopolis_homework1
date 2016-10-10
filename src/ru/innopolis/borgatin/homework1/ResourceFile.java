@@ -1,15 +1,18 @@
 package ru.innopolis.borgatin.homework1;
 
 import java.io.*;
+import java.net.URL;
 
 /**
  * Класс необходим для загрузки ресурсов, считывания информации из них
  * и записи в класс Box
  */
 class ResourceFile implements Runnable{
+
     private String resourcePath;
+
     private Box box;
-    private double tempDouble;
+
     ResourceFile(String resourcePath, Box box)
     {
         this.resourcePath = resourcePath;
@@ -18,38 +21,59 @@ class ResourceFile implements Runnable{
 
     @Override
     public void run() {
-        File file = new File(resourcePath);
-        try (FileReader fr = new FileReader(file)) {
-                StreamTokenizer st = new StreamTokenizer(fr);
-            int tempInt;
-            while (st.nextToken()   != StreamTokenizer.TT_EOF)
-                {
-                    if (st.ttype == StreamTokenizer.TT_NUMBER) {
-                        tempDouble = st.nval;
-                        tempInt = (int) tempDouble;
-                        if (tempInt > 0 && tempInt % 2 == 0 //если прочитанное число четное и положительное
-                                && tempDouble - tempInt == 0.0) { //если полученное число целое
-                            box.inc(tempInt);
-                        }
+
+        double tempDouble;
+
+        int tempInt;
+
+        try (Reader fr = getReader(resourcePath)) {
+            StreamTokenizer st = new StreamTokenizer(fr);
+            while (st.nextToken() != StreamTokenizer.TT_EOF && !Thread.currentThread().isInterrupted()) {
+                if (st.ttype == StreamTokenizer.TT_NUMBER) {
+                    tempDouble = st.nval;
+                    tempInt = (int) tempDouble;
+                    if (tempDouble - tempInt != 0.0) //если передано дробное число,
+                    {
+                        throw new IllegalResourceException(String.format("Ресурс \"%s\" содержит некорректные данные - дробное число", resourcePath)); //выбросим исключение
                     }
-//                    Thread.sleep(500);
+                    if (tempInt > 0 && tempInt % 2 == 0) //если прочитанное число четное и положительное
+                    {
+                        box.inc(tempInt);
+                    }
+                } else //если тип считанной лексемы не число
+                {
+                    box.setNeedInterrupt();
+                    throw new IllegalArgumentException(); //выбросим исключение
                 }
-
-
-        } catch (FileNotFoundException e) {
+            }
+        } catch (IOException | IllegalResourceException e) {
             e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } /*catch (InterruptedException e) {
-            e.printStackTrace();
-        }*/
+            box.setNeedInterrupt();
+        }
 
-        System.out.println(String.format("Поток для файла \"%s\" завершен",resourcePath));
+        if (Thread.currentThread().isInterrupted())
+            System.out.println(String.format("Поток для файла \"%s\" прекращен из-за исключения в другом потоке", resourcePath));
+        else
+            System.out.println(String.format("Поток для файла \"%s\" завершен", resourcePath));
 
-        //Считываем данные из ресурса
-        //проверям, число ли это.
-        //проверям знак числа
-        //если положительное
-        //добавляем в сумму класса Box
+    }
+
+    /**
+     * Метод предназначен для получения по имени ресурса объекта Reader
+     * @param resourcePath имя ресурса - имя файла, либо URL
+     * @return объект Reader для заданного resourcePath
+     * @throws IOException генерируется при ошибках в получении ресурса
+     */
+    private Reader getReader(String resourcePath) throws IOException {
+        if (!resourcePath.startsWith("http")) {
+            File file = new File(resourcePath);
+            return new FileReader(file);
+        } else
+        {
+            //получение URL
+            URL url = new URL(resourcePath);
+            InputStream inputStream = url.openStream();
+            return new InputStreamReader(inputStream);
+        }
     }
 }
