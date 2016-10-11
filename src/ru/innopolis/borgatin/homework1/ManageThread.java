@@ -21,7 +21,7 @@ class ManageThread implements Runnable {
     @Override
     public void run() {
         try {
-            while (!Thread.currentThread().isInterrupted()&&!box.getNeedInterrupt()) {
+            while (!Thread.currentThread().isInterrupted()&&!box.isNeedInterrupt()) {
                 synchronized (monitor) {
                     monitor.setAwait(true);
                     while (monitor.isAwait()) {
@@ -29,7 +29,7 @@ class ManageThread implements Runnable {
                     }
                     System.out.println("Текущая сумма равна: " + box.getAmount());
                 }
-                if (box.getNeedInterrupt())
+                if (box.isNeedInterrupt())
                 {
                     for(Thread thread: queue){
                         thread.interrupt();

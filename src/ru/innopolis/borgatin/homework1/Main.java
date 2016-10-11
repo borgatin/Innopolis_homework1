@@ -27,12 +27,16 @@ class Main {
 
         ResourceFile resourceFile;
         Thread thread;
-        for( String resourceName: args){
-            resourceFile = new ResourceFile(resourceName, box);
-            thread = new Thread(resourceFile, "resourceFile - " + resourceName);
-            thread.start();
-            queue.add(thread);
-            System.out.println("Поток стартован " + resourceName);
+        for( String resourceName: args) {
+            if (box.isNeedInterrupt()) {
+                resourceFile = new ResourceFile(resourceName, box);
+                thread = new Thread(resourceFile, "resourceFile - " + resourceName);
+                thread.start();
+                queue.add(thread);
+                System.out.println("Поток стартован " + resourceName);
+            } else {
+                break;
+            }
         }
     }
 

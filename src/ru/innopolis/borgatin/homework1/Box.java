@@ -48,7 +48,7 @@ class Box {
      *
      * @return возвращает true если в одном из потоков-ресурсов произошло исключение
      */
-    boolean getNeedInterrupt() {
+    boolean isNeedInterrupt() {
         return needInterrupt.get();
     }
 
