@@ -1,5 +1,8 @@
 package ru.innopolis.borgatin.homework1;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.*;
 import java.net.URL;
 
@@ -9,9 +12,12 @@ import java.net.URL;
  */
 class ResourceFile implements Runnable{
 
+    private static Logger logger = LoggerFactory.getLogger(ResourceFile.class);
+
     private String resourcePath;
 
     private Box box;
+    private Validator validator;
 
     ResourceFile(String resourcePath, Box box)
     {
@@ -26,36 +32,29 @@ class ResourceFile implements Runnable{
 
         int tempInt;
 
+        Validator validator = new PositiveEvenNumValidator(); //Класс для проверки соответствия входных значений соответсвию множеству целых четных чисел
+        logger.debug("Validator new instance created");
+
         try (Reader fr = getReader(resourcePath)) {
+            logger.debug("Reader for thread \"{}\" got successfully", Thread.currentThread().getName());
+
             StreamTokenizer st = new StreamTokenizer(fr);
+            logger.debug("StreamTokenizer for thread \"{}\" got successfully", Thread.currentThread().getName());
             while (st.nextToken() != StreamTokenizer.TT_EOF && !Thread.currentThread().isInterrupted()) {
-                if (st.ttype == StreamTokenizer.TT_NUMBER) {
-                    tempDouble = st.nval;
-                    tempInt = (int) tempDouble;
-                    if (tempDouble - tempInt != 0.0) //если передано дробное число,
-                    {
-                        throw new IllegalResourceException(String.format("Ресурс \"%s\" содержит некорректные данные - дробное число", resourcePath)); //выбросим исключение
-                    }
-                    if (tempInt > 0 && tempInt % 2 == 0) //если прочитанное число четное и положительное
-                    {
-                        box.inc(tempInt);
-                    }
-                } else //если тип считанной лексемы не число
+                if (st.ttype == StreamTokenizer.TT_NUMBER ||validator.isValid(st.nval)) {
+                    box.inc((int) st.nval);
+                } else //если тип считанной лексемы не число, либо она не прошла проверку валидатора (не является положительным четным числом)
                 {
                     box.setNeedInterrupt();
+                    logger.error("Error in the validation input data\"{}\" got successfully", Thread.currentThread().getName());
                     throw new IllegalArgumentException(); //выбросим исключение
                 }
             }
         } catch (IOException | IllegalResourceException e) {
-            e.printStackTrace();
+            logger.error("An exception occurred from thread \"{}\": {}", Thread.currentThread().getName(), e.getMessage());
             box.setNeedInterrupt();
         }
-
-        if (Thread.currentThread().isInterrupted())
-            System.out.println(String.format("Поток для файла \"%s\" прекращен из-за исключения в другом потоке", resourcePath));
-        else
-            System.out.println(String.format("Поток для файла \"%s\" завершен", resourcePath));
-
+        logger.info("Thread \"{}\" is finished ", Thread.currentThread().getName());
     }
 
     /**
@@ -66,11 +65,13 @@ class ResourceFile implements Runnable{
      */
     private Reader getReader(String resourcePath) throws IOException {
         if (!resourcePath.startsWith("http")) {
+            logger.debug("Thread \"{}\" -  resource is File", Thread.currentThread().getName());
             File file = new File(resourcePath);
             return new FileReader(file);
         } else
         {
             //получение URL
+            logger.debug("Thread \"{}\" -  resource is URL", Thread.currentThread().getName());
             URL url = new URL(resourcePath);
             InputStream inputStream = url.openStream();
             return new InputStreamReader(inputStream);
